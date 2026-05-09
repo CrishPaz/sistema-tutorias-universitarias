@@ -27,7 +27,7 @@ public class PerfilTutor {
     @JoinColumn(name = "usuario_id", nullable = false, unique = true)
     private Usuario usuario;
 
-    @Column(nullable = false)
+    @Column
     private String especialidad;
 
     @Column(name = "titulo_academico")

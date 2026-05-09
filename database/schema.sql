@@ -60,12 +60,17 @@ CREATE TABLE perfiles_tutor (
     calificacion_promedio DECIMAL(3,2) DEFAULT 5.00,
     total_sesiones INTEGER DEFAULT 0,
     disponibilidad JSONB, -- Horarios disponibles
-    certificaciones TEXT[],
     foto_url TEXT,
     biografia TEXT,
     verificado BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla para certificaciones de tutores (ElementCollection)
+CREATE TABLE tutor_certificaciones (
+    perfil_tutor_id UUID NOT NULL REFERENCES perfiles_tutor(id) ON DELETE CASCADE,
+    certificacion VARCHAR(255) NOT NULL
 );
 
 -- =====================================================

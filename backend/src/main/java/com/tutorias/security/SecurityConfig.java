@@ -51,7 +51,7 @@ public class SecurityConfig {
                 // Solo ADMIN
                 .requestMatchers("/admin/**").hasRole("ADMIN")
                 // Estudiante y Tutor
-                .requestMatchers("/estudiante/**", "/tutor/**", "/sesiones/**").hasAnyRole("ESTUDIANTE", "TUTOR", "ADMIN")
+                .requestMatchers("/estudiante/**", "/tutor/**", "/tutores/**", "/sesiones/**").hasAnyRole("ESTUDIANTE", "TUTOR", "ADMIN")
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

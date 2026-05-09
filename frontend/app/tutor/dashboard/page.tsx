@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import axios from 'axios'
-import { Calendar, DollarSign, Users, Star, LogOut } from 'lucide-react'
+import { Calendar, DollarSign, Users, Star, LogOut, User, Clock } from 'lucide-react'
 import Link from 'next/link'
 
 export default function TutorDashboard() {
@@ -62,9 +62,25 @@ export default function TutorDashboard() {
       </nav>
 
       <div className="max-w-7xl mx-auto px-8 py-12">
-        <div className="mb-10">
-          <h1 className="text-5xl font-semibold tracking-tight">Panel de Tutor</h1>
-          <p className="text-xl text-zinc-400">Gestiona tus sesiones y disponibilidad</p>
+        <div className="mb-10 flex justify-between items-end">
+          <div>
+            <h1 className="text-5xl font-semibold tracking-tight">Panel de Tutor</h1>
+            <p className="text-xl text-zinc-400">Gestiona tus sesiones y disponibilidad</p>
+          </div>
+          <div className="flex gap-3">
+            <Link 
+              href="/tutor/perfil" 
+              className="flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 rounded-2xl text-sm font-medium transition-all"
+            >
+              <User className="w-4 h-4" /> Mi Perfil
+            </Link>
+            <Link 
+              href="/tutor/disponibilidad" 
+              className="flex items-center gap-2 px-6 py-3 bg-emerald-600/30 hover:bg-emerald-600/50 rounded-2xl text-sm font-medium transition-all"
+            >
+              <Clock className="w-4 h-4" /> Disponibilidad
+            </Link>
+          </div>
         </div>
 
         {/* Stats Tutor */}
@@ -81,7 +97,7 @@ export default function TutorDashboard() {
           <div className="glass p-8 rounded-3xl">
             <div className="flex justify-between items-start">
               <div>
-                <div className="text-4xl font-semibold">$1,890</div>
+                <div className="text-4xl font-semibold">S/ 1,890</div>
                 <div className="text-sm text-zinc-400 mt-1">Ingresos este mes</div>
               </div>
               <DollarSign className="w-9 h-9 text-emerald-400" />
