@@ -1,0 +1,90 @@
+services:
+  # =====================================================
+  # POSTGRESQL / SUPABASE COMPATIBLE
+  # =====================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: tutorias-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: tutorias_user
+      POSTGRES_PASSWORD: TutoriasSecure2026!
+      POSTGRES_DB: tutorias_universitarias
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./database/seeds.sql:/docker-entrypoint-initdb.d/02-seeds.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tutorias_user -d tutorias_universitarias"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tutorias-network
+
+  # =====================================================
+  # BACKEND SPRING BOOT 3 + JAVA 21
+  # =====================================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: tutorias-backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/tutorias_universitarias
+      SPRING_DATASOURCE_USERNAME: tutorias_user
+      SPRING_DATASOURCE_PASSWORD: TutoriasSecure2026!
+      JWT_SECRET: super-secret-jwt-key-tutorias-premium-2026-change-in-production
+      JWT_EXPIRATION: 86400000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - tutorias-network
+
+  # =====================================================
+  # FRONTEND NEXT.JS 14
+  # =====================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: tutorias-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8080/api
+    depends_on:
+      - backend
+    networks:
+      - tutorias-network
+
+  # =====================================================
+  # REDIS (Para caché y sesiones)
+  # =====================================================
+  redis:
+    image: redis:7-alpine
+    container_name: tutorias-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - tutorias-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  tutorias-network:
+    driver: bridge
+    name: tutorias-premium-network

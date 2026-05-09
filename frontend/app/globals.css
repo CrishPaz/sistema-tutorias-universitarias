@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+  --card: 222.2 84% 4.9%;
+  --primary: 262.1 83.3% 57.8%;
+  --primary-foreground: 210 40% 98%;
+  --accent: 217.2 32.6% 17.5%;
+  --border: 217.2 32.6% 17.5%;
+}
+
+body {
+  background: #0a0a0a;
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  border-color: #a855f7;
+}
+
+.status-pendiente { @apply bg-yellow-500/20 text-yellow-400 border-yellow-500/30; }
+.status-confirmada { @apply bg-blue-500/20 text-blue-400 border-blue-500/30; }
+.status-completada { @apply bg-green-500/20 text-green-400 border-green-500/30; }
+.status-cancelada { @apply bg-red-500/20 text-red-400 border-red-500/30; }
