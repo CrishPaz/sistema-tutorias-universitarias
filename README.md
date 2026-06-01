@@ -103,11 +103,12 @@ docker-compose ps
 
 ### 3. Credenciales de Prueba
 
-| Rol          | Email                        | Password     |
-|--------------|------------------------------|--------------|
-| Admin        | admin@tutorias.edu           | Admin123!    |
-| Estudiante   | juan.perez@universidad.edu   | Student123!  |
-| Tutor        | ana.garcia@tutorias.edu      | Tutor123!    |
+| Rol          | Email                        | Password           |
+|--------------|------------------------------|--------------------|
+| Admin        | admin@unitru.edu.pe          | Admin123!          |
+| Estudiante   | juan.perez@unitru.edu.pe     | Student123!        |
+| Tutor        | ana.garcia@unitru.edu.pe     | Tutor123!          |
+| Coordinador  | coordinador@unitru.edu.pe    | Coordinador123!    |
 
 ---
 

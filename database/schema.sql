@@ -256,12 +256,8 @@ JOIN materias m ON s.materia_id = m.id
 WHERE s.deleted_at IS NULL;
 
 -- =====================================================
--- DATOS INICIALES (Seeds básicos)
+-- DATOS INICIALES (solo referencia schema + materias; usuarios en database/seeds.sql)
 -- =====================================================
--- Insertar admin por defecto (password: Admin123! - hashear en producción)
-INSERT INTO usuarios (email, password_hash, nombre_completo, rol) 
-VALUES ('admin@tutorias.edu', '$2a$10$examplehash', 'Administrador Sistema', 'ADMIN');
-
 -- Materias de ejemplo
 INSERT INTO materias (codigo, nombre, descripcion, creditos, departamento) VALUES
 ('MAT101', 'Cálculo I', 'Fundamentos de cálculo diferencial', 4, 'Matemáticas'),
