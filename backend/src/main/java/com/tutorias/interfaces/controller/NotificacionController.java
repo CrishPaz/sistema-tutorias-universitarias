@@ -1,6 +1,7 @@
 package com.tutorias.interfaces.controller;
 
 import com.tutorias.domain.Notificacion;
+import com.tutorias.exceptions.NotFoundException;
 import com.tutorias.repository.NotificacionRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -33,7 +34,7 @@ public class NotificacionController {
     @Operation(summary = "Marcar una notificación como leída")
     public Notificacion marcarLeida(@PathVariable UUID id) {
         Notificacion n = notificacionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Notificación no encontrada"));
+                .orElseThrow(() -> new NotFoundException("Notificación no encontrada"));
         n.setLeida(true);
         return notificacionRepository.save(n);
     }

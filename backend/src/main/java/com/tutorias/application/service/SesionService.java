@@ -1,6 +1,7 @@
 package com.tutorias.application.service;
 
 import com.tutorias.domain.*;
+import com.tutorias.exceptions.NotFoundException;
 import com.tutorias.repository.MateriaRepository;
 import com.tutorias.repository.PerfilEstudianteRepository;
 import com.tutorias.repository.PerfilTutorRepository;
@@ -38,14 +39,14 @@ public class SesionService {
         // El frontend envía el id de USUARIO del estudiante (de localStorage)
         PerfilEstudiante estudiante = estudianteRepository.findByUsuarioId(estudianteId)
                 .orElseGet(() -> estudianteRepository.findById(estudianteId)
-                        .orElseThrow(() -> new RuntimeException("Estudiante no encontrado")));
+                        .orElseThrow(() -> new NotFoundException("Estudiante no encontrado")));
 
         // El selector envía el id de PERFIL del tutor (de /tutores)
         PerfilTutor tutor = tutorRepository.findById(tutorId)
-                .orElseThrow(() -> new RuntimeException("Tutor no encontrado"));
+                .orElseThrow(() -> new NotFoundException("Tutor no encontrado"));
 
         Materia materia = materiaRepository.findById(materiaId)
-                .orElseThrow(() -> new RuntimeException("Materia no encontrada"));
+                .orElseThrow(() -> new NotFoundException("Materia no encontrada"));
 
         LocalDateTime fechaFin = fechaInicio.plusMinutes(duracionMinutos);
 
@@ -131,7 +132,7 @@ public class SesionService {
     @Transactional
     public SesionTutoria actualizarEstado(UUID sesionId, SesionTutoria.EstadoSesion nuevoEstado) {
         SesionTutoria sesion = sesionRepository.findById(sesionId)
-                .orElseThrow(() -> new RuntimeException("Sesión no encontrada"));
+                .orElseThrow(() -> new NotFoundException("Sesión no encontrada"));
 
         sesion.setEstado(nuevoEstado);
         SesionTutoria guardada = sesionRepository.save(sesion);
@@ -167,7 +168,7 @@ public class SesionService {
     @Transactional
     public SesionTutoria calificarSesion(UUID sesionId, Integer calificacion, String resena) {
         SesionTutoria sesion = sesionRepository.findById(sesionId)
-                .orElseThrow(() -> new RuntimeException("Sesión no encontrada"));
+                .orElseThrow(() -> new NotFoundException("Sesión no encontrada"));
 
         if (sesion.getEstado() != SesionTutoria.EstadoSesion.COMPLETADA) {
             throw new RuntimeException("Solo se pueden calificar sesiones completadas");
@@ -189,7 +190,7 @@ public class SesionService {
     @Transactional
     public SesionTutoria calificarAcademico(UUID sesionId, BigDecimal notaAcademica, String resena) {
         SesionTutoria sesion = sesionRepository.findById(sesionId)
-                .orElseThrow(() -> new RuntimeException("Sesión no encontrada"));
+                .orElseThrow(() -> new NotFoundException("Sesión no encontrada"));
 
         if (sesion.getEstado() != SesionTutoria.EstadoSesion.COMPLETADA) {
             throw new RuntimeException("Solo se pueden calificar sesiones completadas");

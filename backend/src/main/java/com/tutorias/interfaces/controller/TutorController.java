@@ -4,6 +4,7 @@ import com.tutorias.domain.Certificacion;
 import com.tutorias.domain.Disponibilidad;
 import com.tutorias.domain.PerfilTutor;
 import com.tutorias.domain.Usuario;
+import com.tutorias.exceptions.NotFoundException;
 import com.tutorias.repository.PerfilTutorRepository;
 import com.tutorias.repository.UsuarioRepository;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -111,7 +112,7 @@ public class TutorController {
     public PerfilTutor actualizarDisponibilidad(@PathVariable String usuarioId, @RequestBody Map<String, Object> body) {
         verificarPropietario(UUID.fromString(usuarioId));
         PerfilTutor perfil = perfilTutorRepository.findByUsuarioId(UUID.fromString(usuarioId))
-                .orElseThrow(() -> new RuntimeException("Perfil de tutor no encontrado"));
+                .orElseThrow(() -> new NotFoundException("Perfil de tutor no encontrado"));
 
         if (perfil.getDisponibilidades() == null) perfil.setDisponibilidades(new ArrayList<>());
         perfil.getDisponibilidades().clear();
@@ -137,7 +138,7 @@ public class TutorController {
     public PerfilTutor actualizarCertificaciones(@PathVariable String usuarioId, @RequestBody Map<String, Object> body) {
         verificarPropietario(UUID.fromString(usuarioId));
         PerfilTutor perfil = perfilTutorRepository.findByUsuarioId(UUID.fromString(usuarioId))
-                .orElseThrow(() -> new RuntimeException("Perfil de tutor no encontrado"));
+                .orElseThrow(() -> new NotFoundException("Perfil de tutor no encontrado"));
 
         if (perfil.getCertificaciones() == null) perfil.setCertificaciones(new ArrayList<>());
         perfil.getCertificaciones().clear();

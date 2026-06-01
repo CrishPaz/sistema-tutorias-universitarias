@@ -2,6 +2,7 @@ package com.tutorias.interfaces.controller;
 
 import com.tutorias.domain.Mensaje;
 import com.tutorias.domain.SesionTutoria;
+import com.tutorias.exceptions.NotFoundException;
 import com.tutorias.repository.MensajeRepository;
 import com.tutorias.repository.SesionTutoriaRepository;
 import io.swagger.v3.oas.annotations.Operation;
@@ -41,7 +42,7 @@ public class MensajeController {
         String contenido = body.getOrDefault("contenido", "").toString();
 
         SesionTutoria sesion = sesionRepository.findById(sesionId)
-                .orElseThrow(() -> new RuntimeException("Sesión no encontrada"));
+                .orElseThrow(() -> new NotFoundException("Sesión no encontrada"));
 
         UUID estudianteUserId = sesion.getEstudiante().getUsuario().getId();
         UUID tutorUserId = sesion.getTutor().getUsuario().getId();

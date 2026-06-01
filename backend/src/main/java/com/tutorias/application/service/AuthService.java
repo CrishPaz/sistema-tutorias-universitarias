@@ -1,6 +1,8 @@
 package com.tutorias.application.service;
 
 import com.tutorias.domain.Usuario;
+import com.tutorias.exceptions.ConflictException;
+import com.tutorias.exceptions.NotFoundException;
 import com.tutorias.interfaces.dto.AuthResponse;
 import com.tutorias.interfaces.dto.LoginRequest;
 import com.tutorias.interfaces.dto.RegisterRequest;
@@ -36,7 +38,7 @@ public class AuthService {
     public AuthResponse register(RegisterRequest request) {
         // Validar si el email ya existe
         if (usuarioRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("El email ya está registrado");
+            throw new ConflictException("El email ya está registrado");
         }
 
         // Crear usuario
@@ -85,7 +87,7 @@ public class AuthService {
         String refreshToken = jwtUtil.generateRefreshToken(userDetails);
 
         Usuario usuario = usuarioRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
 
         // Actualizar último login
         usuario.setUltimoLogin(LocalDateTime.now());
@@ -120,7 +122,7 @@ public class AuthService {
         String newRefreshToken = jwtUtil.generateRefreshToken(userDetails);
 
         Usuario usuario = usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
 
         return AuthResponse.builder()
                 .accessToken(newAccessToken)
