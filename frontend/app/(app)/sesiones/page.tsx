@@ -3,7 +3,26 @@
 import { useEffect, useState } from 'react'
 import api from '@/lib/api'
 import Link from 'next/link'
-import { Calendar } from 'lucide-react'
+import { Calendar, Star, GraduationCap } from 'lucide-react'
+
+const ESTADO_STYLE: Record<string, string> = {
+  PENDIENTE: 'bg-yellow-500/20 text-yellow-400',
+  CONFIRMADA: 'bg-blue-500/20 text-blue-400',
+  EN_PROGRESO: 'bg-purple-500/20 text-purple-300',
+  COMPLETADA: 'bg-emerald-500/20 text-emerald-400',
+  CANCELADA: 'bg-red-500/20 text-red-400',
+  NO_ASISTIO: 'bg-zinc-500/20 text-zinc-300',
+}
+
+function Estrellas({ n }: { n: number }) {
+  return (
+    <span className="inline-flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map(i => (
+        <Star key={i} className={`w-4 h-4 ${i <= n ? 'text-yellow-400 fill-yellow-400' : 'text-zinc-600'}`} />
+      ))}
+    </span>
+  )
+}
 
 export default function MisSesiones() {
   const [sesiones, setSesiones] = useState<any[]>([])
@@ -12,7 +31,6 @@ export default function MisSesiones() {
   useEffect(() => {
     const userId = localStorage.getItem('userId')
     const rol = localStorage.getItem('rol')
-
     if (!userId) return
 
     const endpoint = rol === 'TUTOR'
@@ -42,20 +60,53 @@ export default function MisSesiones() {
           </div>
         ) : (
           <div className="space-y-4">
-            {sesiones.map((s, i) => (
-              <div key={i} className="glass p-8 rounded-3xl flex justify-between items-center">
-                <div>
-                  <div className="font-semibold text-2xl">{s.materia?.nombre}</div>
-                  <div className="text-zinc-400">con {s.tutor?.usuario?.nombreCompleto || s.estudiante?.usuario?.nombreCompleto}</div>
-                </div>
-                <div className="text-right">
-                  <div className="text-lg">{new Date(s.fechaHoraInicio).toLocaleString('es-MX')}</div>
-                  <div className={`inline-block px-4 py-1 text-xs rounded-full mt-2 ${s.estado === 'COMPLETADA' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
-                    {s.estado}
+            {sesiones.map((s, i) => {
+              const tieneResena = s.calificacionEstudiante != null || (s.resenaEstudiante && s.resenaEstudiante.trim())
+              const tieneNota = s.notaAcademica != null || (s.resenaTutor && s.resenaTutor.trim())
+              return (
+                <div key={i} className="glass p-8 rounded-3xl">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="font-semibold text-2xl">{s.materia?.nombre}</div>
+                      <div className="text-zinc-400">con {s.tutor?.usuario?.nombreCompleto || s.estudiante?.usuario?.nombreCompleto}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-lg">{new Date(s.fechaHoraInicio).toLocaleString('es-PE')}</div>
+                      <div className={`inline-block px-4 py-1 text-xs rounded-full mt-2 font-semibold ${ESTADO_STYLE[s.estado] || 'bg-zinc-700'}`}>
+                        {s.estado}
+                      </div>
+                    </div>
                   </div>
+
+                  {(tieneResena || tieneNota) && (
+                    <div className="mt-6 pt-6 border-t border-white/10 grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Valoración del estudiante al servicio */}
+                      {tieneResena && (
+                        <div>
+                          <div className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
+                            <Star className="w-4 h-4 text-yellow-400" /> Valoración del estudiante
+                          </div>
+                          {s.calificacionEstudiante != null && <Estrellas n={s.calificacionEstudiante} />}
+                          {s.resenaEstudiante && <p className="text-zinc-300 mt-2 text-sm italic">“{s.resenaEstudiante}”</p>}
+                        </div>
+                      )}
+                      {/* Nota académica del tutor al estudiante */}
+                      {tieneNota && (
+                        <div>
+                          <div className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
+                            <GraduationCap className="w-4 h-4 text-emerald-400" /> Nota académica del tutor
+                          </div>
+                          {s.notaAcademica != null && (
+                            <div className="text-2xl font-semibold">{s.notaAcademica}<span className="text-sm text-zinc-500"> / 20</span></div>
+                          )}
+                          {s.resenaTutor && <p className="text-zinc-300 mt-2 text-sm italic">“{s.resenaTutor}”</p>}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>

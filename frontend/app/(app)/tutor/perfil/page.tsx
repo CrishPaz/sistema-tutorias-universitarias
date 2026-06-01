@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import api from '@/lib/api'
-import { Save, User, Award, Plus, Trash2 } from 'lucide-react'
+import { Save, User, Award, Plus, Trash2, Star } from 'lucide-react'
 
 interface Certificacion {
   nombre: string
@@ -13,6 +13,7 @@ interface Certificacion {
 export default function PerfilTutor() {
   const [perfil, setPerfil] = useState<any>(null)
   const [certificaciones, setCertificaciones] = useState<Certificacion[]>([])
+  const [resenas, setResenas] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [mensaje, setMensaje] = useState('')
@@ -29,6 +30,11 @@ export default function PerfilTutor() {
       // biografia ahora vive en usuario; la elevamos a nivel raíz para editar
       setPerfil({ ...res.data, biografia: res.data.usuario?.biografia || '' })
       setCertificaciones(res.data.certificaciones || [])
+      // Reseñas recibidas (sesiones calificadas por estudiantes)
+      try {
+        const ses = await api.get(`/sesiones/tutor/${userId}`)
+        setResenas((ses.data || []).filter((s: any) => s.calificacionEstudiante != null))
+      } catch { /* sin reseñas */ }
     } catch (error) {
       console.error('Error cargando perfil')
     } finally {
@@ -217,6 +223,32 @@ export default function PerfilTutor() {
             <Save className="w-5 h-5" />
             {saving ? 'Guardando...' : 'Guardar Cambios'}
           </button>
+        </div>
+
+        {/* Reseñas recibidas (#10) */}
+        <div className="glass p-10 rounded-3xl border border-white/10 mt-8">
+          <h2 className="text-2xl font-semibold flex items-center gap-2 mb-6">
+            <Star className="w-6 h-6 text-yellow-400" /> Reseñas recibidas
+          </h2>
+          {resenas.length === 0 ? (
+            <p className="text-sm text-zinc-500">Aún no tienes reseñas de estudiantes.</p>
+          ) : (
+            <div className="space-y-4">
+              {resenas.map((s, i) => (
+                <div key={i} className="bg-zinc-900/50 p-5 rounded-2xl">
+                  <div className="flex items-center justify-between">
+                    <div className="inline-flex items-center gap-0.5">
+                      {[1, 2, 3, 4, 5].map(n => (
+                        <Star key={n} className={`w-4 h-4 ${n <= s.calificacionEstudiante ? 'text-yellow-400 fill-yellow-400' : 'text-zinc-600'}`} />
+                      ))}
+                    </div>
+                    <span className="text-xs text-zinc-500">{s.materia?.nombre} · {s.estudiante?.usuario?.nombreCompleto}</span>
+                  </div>
+                  {s.resenaEstudiante && <p className="text-zinc-300 mt-2 text-sm italic">“{s.resenaEstudiante}”</p>}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
