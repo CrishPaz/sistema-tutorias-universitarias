@@ -4,10 +4,12 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, User, GraduationCap } from 'lucide-react'
-import axios from 'axios'
+import api from '@/lib/api'
+import { useToast } from '@/lib/toast'
 
 export default function RegisterPage() {
   const router = useRouter()
+  const toast = useToast()
   const [step, setStep] = useState(1)
   const [role, setRole] = useState<'ESTUDIANTE' | 'TUTOR'>('ESTUDIANTE')
   const [formData, setFormData] = useState({
@@ -53,10 +55,10 @@ export default function RegisterPage() {
     }
 
     try {
-      const response = await axios.post('http://localhost:8080/api/auth/register', payload)
-      
+      await api.post('/auth/register', payload)
+
       // Auto-login después de registro
-      const loginRes = await axios.post('http://localhost:8080/api/auth/login', {
+      const loginRes = await api.post('/auth/login', {
         email: formData.email,
         password: formData.password
       })
@@ -66,13 +68,17 @@ export default function RegisterPage() {
       localStorage.setItem('rol', loginRes.data.rol)
       localStorage.setItem('nombre', loginRes.data.nombreCompleto)
 
+      toast('¡Cuenta creada! Bienvenido 🎉', 'success')
+
       if (role === 'TUTOR') {
         router.push('/tutor/dashboard')
       } else {
         router.push('/dashboard')
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Error al registrar. Intenta de nuevo.')
+      const msg = err.response?.data?.message || 'Error al registrar. Intenta de nuevo.'
+      setError(msg)
+      toast(msg, 'error')
     } finally {
       setLoading(false)
     }

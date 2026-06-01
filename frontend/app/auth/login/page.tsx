@@ -5,10 +5,12 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react'
-import axios from 'axios'
+import api from '@/lib/api'
+import { useToast } from '@/lib/toast'
 
 export default function LoginPage() {
   const router = useRouter()
+  const toast = useToast()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -21,10 +23,7 @@ export default function LoginPage() {
     setError('')
 
     try {
-      const response = await axios.post('http://localhost:8080/api/auth/login', {
-        email,
-        password
-      })
+      const response = await api.post('/auth/login', { email, password })
 
       const { accessToken, userId, rol, nombreCompleto } = response.data
 
@@ -33,6 +32,8 @@ export default function LoginPage() {
       localStorage.setItem('userId', userId)
       localStorage.setItem('rol', rol)
       localStorage.setItem('nombre', nombreCompleto)
+
+      toast(`¡Bienvenido, ${nombreCompleto?.split(' ')[0] || ''}!`, 'success')
 
       // Redirigir según rol
       if (rol === 'TUTOR') {
@@ -43,7 +44,9 @@ export default function LoginPage() {
         router.push('/dashboard')
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Credenciales incorrectas')
+      const msg = err.response?.data?.message || 'Credenciales incorrectas'
+      setError(msg)
+      toast(msg, 'error')
     } finally {
       setLoading(false)
     }

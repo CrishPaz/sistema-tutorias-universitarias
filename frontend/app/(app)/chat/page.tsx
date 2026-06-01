@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import api from '@/lib/api'
+import { useToast } from '@/lib/toast'
 import { Send, MessageCircle } from 'lucide-react'
 
 interface Mensaje {
@@ -19,6 +20,7 @@ interface Sesion {
 }
 
 export default function ChatPage() {
+  const toast = useToast()
   const [sesiones, setSesiones] = useState<Sesion[]>([])
   const [selectedSesion, setSelectedSesion] = useState('')
   const [mensajes, setMensajes] = useState<Mensaje[]>([])
@@ -66,7 +68,7 @@ export default function ChatPage() {
       const res = await api.get(`/mensajes/${selectedSesion}`)
       setMensajes(res.data)
     } catch (error) {
-      alert('Error al enviar mensaje')
+      toast('No se pudo enviar el mensaje', 'error')
     } finally {
       setLoading(false)
     }

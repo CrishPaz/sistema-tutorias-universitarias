@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import api from '@/lib/api'
+import { useToast } from '@/lib/toast'
 import { Calendar } from 'lucide-react'
 
 interface Tutor {
@@ -23,6 +24,7 @@ interface Materia {
 
 export default function ReservarSesion() {
   const router = useRouter()
+  const toast = useToast()
   const [tutores, setTutores] = useState<Tutor[]>([])
   const [materias, setMaterias] = useState<Materia[]>([])
   const [selectedTutor, setSelectedTutor] = useState('')
@@ -68,10 +70,12 @@ export default function ReservarSesion() {
         }
       })
 
-      alert('¡Sesión reservada exitosamente!')
+      toast('¡Sesión reservada exitosamente!', 'success')
       router.push('/dashboard')
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Error al reservar la sesión')
+      const msg = err.response?.data?.message || 'Error al reservar la sesión'
+      setError(msg)
+      toast(msg, 'error')
     } finally {
       setLoading(false)
     }
