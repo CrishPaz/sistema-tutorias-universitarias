@@ -51,7 +51,8 @@ public class SecurityConfig {
                     "/auth/**",
                     "/swagger-ui/**",
                     "/v3/api-docs/**",
-                    "/actuator/health"
+                    "/actuator/health",
+                    "/mensajes/stream/**"   // SSE: el JWT va por query-param y se valida en el controlador
                 ).permitAll()
                 // Solo ADMIN / COORDINADOR
                 .requestMatchers("/admin/**").hasAnyRole("ADMIN", "COORDINADOR")

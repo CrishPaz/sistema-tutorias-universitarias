@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import api from '@/lib/api'
+import api, { API_URL } from '@/lib/api'
 import { useToast } from '@/lib/toast'
 import { Send, MessageCircle } from 'lucide-react'
 
@@ -41,15 +41,23 @@ export default function ChatPage() {
     })
   }, [userId])
 
-  // Cargar mensajes cuando se selecciona una sesión
+  // Al seleccionar una sesión: cargar historial una vez y suscribirse por SSE (tiempo real)
   useEffect(() => {
     if (!selectedSesion) return
 
-    const interval = setInterval(() => {
-      api.get(`/mensajes/${selectedSesion}`).then(res => setMensajes(res.data))
-    }, 3000) // Actualizar cada 3 segundos
+    api.get(`/mensajes/${selectedSesion}`).then(res => setMensajes(res.data)).catch(() => {})
 
-    return () => clearInterval(interval)
+    const token = localStorage.getItem('token')
+    const es = new EventSource(`${API_URL}/mensajes/stream/${selectedSesion}?token=${token}`)
+    es.addEventListener('mensaje', (e: MessageEvent) => {
+      try {
+        const nuevo = JSON.parse(e.data)
+        setMensajes(prev => prev.some(m => m.id === nuevo.id) ? prev : [...prev, nuevo])
+      } catch { /* ignore */ }
+    })
+    es.onerror = () => { /* EventSource reintenta solo */ }
+
+    return () => es.close()
   }, [selectedSesion])
 
   const enviarMensaje = async () => {
