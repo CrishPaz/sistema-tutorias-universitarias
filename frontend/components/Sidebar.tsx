@@ -21,6 +21,7 @@ const MENUS: Record<string, Item[]> = {
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/sesiones/reservar', label: 'Reservar', icon: CalendarPlus },
     { href: '/sesiones', label: 'Mis sesiones', icon: BookOpen },
+    { href: '/estudiante/perfil', label: 'Mi perfil', icon: User },
     { href: '/chat', label: 'Chat', icon: MessageSquare },
     { href: '/notificaciones', label: 'Notificaciones', icon: Bell },
   ],

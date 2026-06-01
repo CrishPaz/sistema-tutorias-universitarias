@@ -56,7 +56,7 @@ public class SecurityConfig {
                 // Solo ADMIN / COORDINADOR
                 .requestMatchers("/admin/**").hasAnyRole("ADMIN", "COORDINADOR")
                 // Lectura de tutores y sesiones: todos los roles autenticados
-                .requestMatchers("/estudiante/**", "/tutor/**", "/tutores/**", "/sesiones/**")
+                .requestMatchers("/estudiante/**", "/estudiantes/**", "/tutor/**", "/tutores/**", "/sesiones/**")
                     .hasAnyRole("ESTUDIANTE", "TUTOR", "ADMIN", "COORDINADOR")
                 .anyRequest().authenticated()
             )
