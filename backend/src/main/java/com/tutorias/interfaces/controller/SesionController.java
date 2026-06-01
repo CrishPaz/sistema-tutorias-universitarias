@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -63,10 +64,21 @@ public class SesionController {
 
     @PostMapping("/{id}/calificar")
     @PreAuthorize("hasRole('ESTUDIANTE')")
+    @Operation(summary = "El estudiante califica el servicio de tutoría (1-5) y deja una reseña")
     public ResponseEntity<SesionTutoria> calificar(
             @PathVariable UUID id,
             @RequestParam Integer calificacion,
-            @RequestParam(required = false) String comentario) {
-        return ResponseEntity.ok(sesionService.calificarSesion(id, calificacion, comentario));
+            @RequestParam(required = false) String resena) {
+        return ResponseEntity.ok(sesionService.calificarSesion(id, calificacion, resena));
+    }
+
+    @PostMapping("/{id}/nota-academica")
+    @PreAuthorize("hasRole('TUTOR')")
+    @Operation(summary = "El tutor asigna la nota académica al estudiante (0-20) y deja una reseña")
+    public ResponseEntity<SesionTutoria> notaAcademica(
+            @PathVariable UUID id,
+            @RequestParam BigDecimal nota,
+            @RequestParam(required = false) String resena) {
+        return ResponseEntity.ok(sesionService.calificarAcademico(id, nota, resena));
     }
 }

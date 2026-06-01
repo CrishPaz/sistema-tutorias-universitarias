@@ -1,5 +1,6 @@
 package com.tutorias.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -16,6 +17,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class PerfilEstudiante {
 
     @Id
@@ -42,12 +44,6 @@ public class PerfilEstudiante {
     @Column(name = "creditos_aprobados")
     @Builder.Default
     private Integer creditosAprobados = 0;
-
-    @Column(name = "foto_url")
-    private String fotoUrl;
-
-    @Column(columnDefinition = "TEXT")
-    private String biografia;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

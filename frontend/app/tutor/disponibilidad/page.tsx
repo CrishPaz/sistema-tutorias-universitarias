@@ -36,8 +36,17 @@ export default function DisponibilidadTutor() {
       const res = await axios.get(`http://localhost:8080/api/tutores/perfil/${userId}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
-      if (res.data.disponibilidad) {
-        setDisponibilidad(res.data.disponibilidad)
+      // El backend devuelve una lista [{diaSemana, horaInicio, horaFin}]; la convertimos al objeto por día
+      const lista = res.data.disponibilidades || []
+      if (lista.length > 0) {
+        const obj: any = {}
+        lista.forEach((d: any) => {
+          obj[d.diaSemana.toLowerCase()] = {
+            inicio: (d.horaInicio || '').slice(0, 5),
+            fin: (d.horaFin || '').slice(0, 5)
+          }
+        })
+        setDisponibilidad((prev: any) => ({ ...prev, ...obj }))
       }
     } catch (error) {
       console.error('Error cargando disponibilidad')
@@ -47,8 +56,17 @@ export default function DisponibilidadTutor() {
   const guardarDisponibilidad = async () => {
     setSaving(true)
     try {
-      await axios.patch(`http://localhost:8080/api/tutores/disponibilidad/${userId}`, {
-        disponibilidad
+      // Convertimos el objeto por día a la lista que espera el backend (solo días con horas)
+      const disponibilidades = Object.entries(disponibilidad)
+        .filter(([, h]: any) => h?.inicio && h?.fin)
+        .map(([dia, h]: any) => ({
+          diaSemana: dia.toUpperCase(),
+          horaInicio: h.inicio,
+          horaFin: h.fin
+        }))
+
+      await axios.put(`http://localhost:8080/api/tutores/disponibilidad/${userId}`, {
+        disponibilidades
       }, {
         headers: { Authorization: `Bearer ${token}` }
       })

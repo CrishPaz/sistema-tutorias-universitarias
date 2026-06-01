@@ -3,12 +3,19 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import axios from 'axios'
-import { ArrowLeft, Save, User } from 'lucide-react'
+import { ArrowLeft, Save, User, Award, Plus, Trash2 } from 'lucide-react'
 import Link from 'next/link'
+
+interface Certificacion {
+  nombre: string
+  institucion?: string
+  anio?: number | string
+}
 
 export default function PerfilTutor() {
   const router = useRouter()
   const [perfil, setPerfil] = useState<any>(null)
+  const [certificaciones, setCertificaciones] = useState<Certificacion[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [mensaje, setMensaje] = useState('')
@@ -30,7 +37,9 @@ export default function PerfilTutor() {
       const res = await axios.get(`http://localhost:8080/api/tutores/perfil/${userId}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
-      setPerfil(res.data)
+      // biografia ahora vive en usuario; la elevamos a nivel raíz para editar
+      setPerfil({ ...res.data, biografia: res.data.usuario?.biografia || '' })
+      setCertificaciones(res.data.certificaciones || [])
     } catch (error) {
       console.error('Error cargando perfil')
     } finally {
@@ -41,9 +50,13 @@ export default function PerfilTutor() {
   const guardarPerfil = async () => {
     setSaving(true)
     try {
-      await axios.put(`http://localhost:8080/api/tutores/perfil/${userId}`, perfil, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
+      const headers = { Authorization: `Bearer ${token}` }
+      // 1) Datos del perfil (biografia se enruta a usuario en el backend)
+      await axios.put(`http://localhost:8080/api/tutores/perfil/${userId}`, perfil, { headers })
+      // 2) Certificaciones (lista 1:N, se reemplaza completa)
+      await axios.put(`http://localhost:8080/api/tutores/certificaciones/${userId}`, {
+        certificaciones: certificaciones.filter(c => c.nombre?.trim())
+      }, { headers })
       setMensaje('Perfil actualizado correctamente')
       setTimeout(() => setMensaje(''), 3000)
     } catch (error) {
@@ -52,6 +65,15 @@ export default function PerfilTutor() {
       setSaving(false)
     }
   }
+
+  const agregarCertificacion = () =>
+    setCertificaciones([...certificaciones, { nombre: '', institucion: '', anio: '' }])
+
+  const quitarCertificacion = (i: number) =>
+    setCertificaciones(certificaciones.filter((_, idx) => idx !== i))
+
+  const actualizarCert = (i: number, campo: keyof Certificacion, valor: string) =>
+    setCertificaciones(certificaciones.map((c, idx) => idx === i ? { ...c, [campo]: valor } : c))
 
   if (loading) {
     return <div className="min-h-screen bg-zinc-950 flex items-center justify-center">Cargando...</div>
@@ -79,8 +101,8 @@ export default function PerfilTutor() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium mb-2 text-zinc-300">Especialidad</label>
-              <select 
-                value={perfil?.especialidad || ''} 
+              <select
+                value={perfil?.especialidad || ''}
                 onChange={(e) => setPerfil({...perfil, especialidad: e.target.value})}
                 className="w-full bg-zinc-900 border border-white/20 rounded-2xl px-5 py-4 text-white focus:border-purple-500"
               >
@@ -100,8 +122,8 @@ export default function PerfilTutor() {
 
             <div>
               <label className="block text-sm font-medium mb-2 text-zinc-300">Título Académico</label>
-              <select 
-                value={perfil?.tituloAcademico || ''} 
+              <select
+                value={perfil?.tituloAcademico || ''}
                 onChange={(e) => setPerfil({...perfil, tituloAcademico: e.target.value})}
                 className="w-full bg-zinc-900 border border-white/20 rounded-2xl px-5 py-4 text-white focus:border-purple-500"
               >
@@ -118,9 +140,9 @@ export default function PerfilTutor() {
 
             <div>
               <label className="block text-sm font-medium mb-2 text-zinc-300">Años de Experiencia</label>
-              <input 
-                type="number" 
-                value={perfil?.anosExperiencia || 0} 
+              <input
+                type="number"
+                value={perfil?.anosExperiencia || 0}
                 onChange={(e) => setPerfil({...perfil, anosExperiencia: parseInt(e.target.value)})}
                 className="w-full bg-zinc-900 border border-white/20 rounded-2xl px-5 py-4 text-white focus:border-purple-500"
               />
@@ -128,9 +150,9 @@ export default function PerfilTutor() {
 
             <div>
               <label className="block text-sm font-medium mb-2 text-zinc-300">Tarifa por Hora (S/)</label>
-              <input 
-                type="number" 
-                value={perfil?.tarifaHora || 0} 
+              <input
+                type="number"
+                value={perfil?.tarifaHora || 0}
                 onChange={(e) => setPerfil({...perfil, tarifaHora: parseFloat(e.target.value)})}
                 className="w-full bg-zinc-900 border border-white/20 rounded-2xl px-5 py-4 text-white focus:border-purple-500"
               />
@@ -139,8 +161,8 @@ export default function PerfilTutor() {
 
           <div>
             <label className="block text-sm font-medium mb-2 text-zinc-300">Biografía</label>
-            <textarea 
-              value={perfil?.biografia || ''} 
+            <textarea
+              value={perfil?.biografia || ''}
               onChange={(e) => setPerfil({...perfil, biografia: e.target.value})}
               rows={5}
               className="w-full bg-zinc-900 border border-white/20 rounded-2xl px-5 py-4 text-white focus:border-purple-500"
@@ -148,7 +170,61 @@ export default function PerfilTutor() {
             />
           </div>
 
-          <button 
+          {/* Certificaciones (1:N) */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <label className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+                <Award className="w-4 h-4 text-purple-400" /> Certificaciones
+              </label>
+              <button
+                type="button"
+                onClick={agregarCertificacion}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-600/30 hover:bg-purple-600/50 rounded-xl text-sm font-medium transition-all"
+              >
+                <Plus className="w-4 h-4" /> Agregar
+              </button>
+            </div>
+
+            {certificaciones.length === 0 ? (
+              <p className="text-sm text-zinc-500">Aún no has agregado certificaciones.</p>
+            ) : (
+              <div className="space-y-3">
+                {certificaciones.map((cert, i) => (
+                  <div key={i} className="flex flex-col md:flex-row gap-3 items-stretch bg-zinc-900/50 p-3 rounded-2xl">
+                    <input
+                      placeholder="Nombre de la certificación"
+                      value={cert.nombre || ''}
+                      onChange={(e) => actualizarCert(i, 'nombre', e.target.value)}
+                      className="flex-[2] bg-zinc-900 border border-white/20 rounded-xl px-4 py-3 text-white text-sm"
+                    />
+                    <input
+                      placeholder="Institución"
+                      value={cert.institucion || ''}
+                      onChange={(e) => actualizarCert(i, 'institucion', e.target.value)}
+                      className="flex-1 bg-zinc-900 border border-white/20 rounded-xl px-4 py-3 text-white text-sm"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Año"
+                      value={cert.anio ?? ''}
+                      onChange={(e) => actualizarCert(i, 'anio', e.target.value)}
+                      className="w-24 bg-zinc-900 border border-white/20 rounded-xl px-4 py-3 text-white text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => quitarCertificacion(i)}
+                      className="px-3 flex items-center justify-center text-red-400 hover:bg-red-500/10 rounded-xl"
+                      aria-label="Quitar"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <button
             onClick={guardarPerfil}
             disabled={saving}
             className="w-full py-4 bg-white hover:bg-zinc-100 disabled:bg-zinc-700 text-black font-semibold rounded-2xl flex items-center justify-center gap-3 transition-all"

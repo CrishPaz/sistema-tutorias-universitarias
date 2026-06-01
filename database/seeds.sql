@@ -59,11 +59,33 @@ SELECT
     55.00; -- Precio en Soles Peruanos (PEN)
 
 -- Historial académico
-INSERT INTO historial_academico (estudiante_id, materia_id, calificacion, periodo, creditos, estado)
-SELECT 
+INSERT INTO historial_academico (estudiante_id, materia_id, calificacion, periodo, estado)
+SELECT
     (SELECT id FROM perfiles_estudiante WHERE usuario_id = '550e8400-e29b-41d4-a716-446655440001'),
     (SELECT id FROM materias WHERE codigo = 'MAT101'),
-    9.5, '2024-2', 4, 'APROBADA';
+    9.5, '2024-2', 'APROBADA';
+
+-- Disponibilidades de tutores (1:N)
+INSERT INTO disponibilidades (perfil_tutor_id, dia_semana, hora_inicio, hora_fin)
+SELECT pt.id, d.dia, d.inicio, d.fin
+FROM perfiles_tutor pt
+JOIN (VALUES
+    ('550e8400-e29b-41d4-a716-446655440011', 'LUNES',     TIME '08:00', TIME '12:00'),
+    ('550e8400-e29b-41d4-a716-446655440011', 'MIERCOLES', TIME '14:00', TIME '18:00'),
+    ('550e8400-e29b-41d4-a716-446655440012', 'MARTES',    TIME '09:00', TIME '13:00'),
+    ('550e8400-e29b-41d4-a716-446655440012', 'JUEVES',    TIME '15:00', TIME '19:00'),
+    ('550e8400-e29b-41d4-a716-446655440013', 'VIERNES',   TIME '10:00', TIME '16:00')
+) AS d(usuario_id, dia, inicio, fin) ON pt.usuario_id = d.usuario_id::uuid;
+
+-- Certificaciones de tutores (1:N)
+INSERT INTO certificaciones (perfil_tutor_id, nombre, institucion, anio)
+SELECT pt.id, c.nombre, c.institucion, c.anio
+FROM perfiles_tutor pt
+JOIN (VALUES
+    ('550e8400-e29b-41d4-a716-446655440011', 'PhD en Matemáticas Aplicadas', 'UNMSM', 2014),
+    ('550e8400-e29b-41d4-a716-446655440012', 'Oracle Certified Professional Java SE', 'Oracle', 2020),
+    ('550e8400-e29b-41d4-a716-446655440013', 'TensorFlow Developer Certificate', 'Google', 2022)
+) AS c(usuario_id, nombre, institucion, anio) ON pt.usuario_id = c.usuario_id::uuid;
 
 -- Notificaciones de ejemplo
 INSERT INTO notificaciones (usuario_id, titulo, mensaje, tipo) 

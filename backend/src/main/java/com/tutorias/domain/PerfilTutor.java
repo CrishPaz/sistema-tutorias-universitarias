@@ -1,5 +1,6 @@
 package com.tutorias.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -7,6 +8,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -17,6 +19,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class PerfilTutor {
 
     @Id
@@ -49,19 +52,13 @@ public class PerfilTutor {
     @Builder.Default
     private Integer totalSesiones = 0;
 
-    @Column(columnDefinition = "jsonb")
-    private String disponibilidad; // JSON con horarios
+    @OneToMany(mappedBy = "perfilTutor", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Disponibilidad> disponibilidades = new ArrayList<>();
 
-    @ElementCollection
-    @CollectionTable(name = "tutor_certificaciones", joinColumns = @JoinColumn(name = "perfil_tutor_id"))
-    @Column(name = "certificacion")
-    private List<String> certificaciones;
-
-    @Column(name = "foto_url")
-    private String fotoUrl;
-
-    @Column(columnDefinition = "TEXT")
-    private String biografia;
+    @OneToMany(mappedBy = "perfilTutor", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Certificacion> certificaciones = new ArrayList<>();
 
     @Builder.Default
     private Boolean verificado = false;

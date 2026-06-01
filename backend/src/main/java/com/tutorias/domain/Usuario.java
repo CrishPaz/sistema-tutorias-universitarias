@@ -1,5 +1,7 @@
 package com.tutorias.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -21,6 +23,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @SQLDelete(sql = "UPDATE usuarios SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?")
 @Where(clause = "deleted_at IS NULL")
 public class Usuario {
@@ -32,6 +35,7 @@ public class Usuario {
     @Column(unique = true, nullable = false)
     private String email;
 
+    @JsonIgnore
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
@@ -51,6 +55,12 @@ public class Usuario {
     @Column(name = "email_verificado")
     @Builder.Default
     private Boolean emailVerificado = false;
+
+    @Column(name = "foto_url", columnDefinition = "TEXT")
+    private String fotoUrl;
+
+    @Column(columnDefinition = "TEXT")
+    private String biografia;
 
     @Column(name = "ultimo_login")
     private LocalDateTime ultimoLogin;

@@ -1,6 +1,7 @@
 package com.tutorias.application.service;
 
 import com.tutorias.domain.*;
+import com.tutorias.repository.MateriaRepository;
 import com.tutorias.repository.PerfilEstudianteRepository;
 import com.tutorias.repository.PerfilTutorRepository;
 import com.tutorias.repository.SesionTutoriaRepository;
@@ -23,6 +24,7 @@ public class SesionService {
     private final SesionTutoriaRepository sesionRepository;
     private final PerfilEstudianteRepository estudianteRepository;
     private final PerfilTutorRepository tutorRepository;
+    private final MateriaRepository materiaRepository;
 
     @Transactional
     public SesionTutoria reservarSesion(UUID estudianteId, UUID tutorId, UUID materiaId,
@@ -35,16 +37,18 @@ public class SesionService {
         PerfilTutor tutor = tutorRepository.findById(tutorId)
                 .orElseThrow(() -> new RuntimeException("Tutor no encontrado"));
 
+        Materia materia = materiaRepository.findById(materiaId)
+                .orElseThrow(() -> new RuntimeException("Materia no encontrada"));
+
         // Validar disponibilidad (simplificado - en producción usar calendario real)
         LocalDateTime fechaFin = fechaInicio.plusMinutes(duracionMinutos);
 
         SesionTutoria sesion = SesionTutoria.builder()
                 .estudiante(estudiante)
                 .tutor(tutor)
-                .materia(new Materia()) // Se asigna en controller
+                .materia(materia)
                 .fechaHoraInicio(fechaInicio)
                 .fechaHoraFin(fechaFin)
-                .duracionMinutos(duracionMinutos)
                 .estado(SesionTutoria.EstadoSesion.PENDIENTE)
                 .modalidad(SesionTutoria.Modalidad.valueOf(modalidad.toUpperCase()))
                 .precio(tutor.getTarifaHora().multiply(BigDecimal.valueOf(duracionMinutos / 60.0)))
@@ -79,8 +83,11 @@ public class SesionService {
         return sesionRepository.save(sesion);
     }
 
+    /**
+     * Calificación del estudiante hacia el servicio de tutoría (nota 1-5 + reseña).
+     */
     @Transactional
-    public SesionTutoria calificarSesion(UUID sesionId, Integer calificacion, String comentario) {
+    public SesionTutoria calificarSesion(UUID sesionId, Integer calificacion, String resena) {
         SesionTutoria sesion = sesionRepository.findById(sesionId)
                 .orElseThrow(() -> new RuntimeException("Sesión no encontrada"));
 
@@ -89,7 +96,25 @@ public class SesionService {
         }
 
         sesion.setCalificacionEstudiante(calificacion);
-        sesion.setComentarioCalificacion(comentario);
+        sesion.setResenaEstudiante(resena);
+
+        return sesionRepository.save(sesion);
+    }
+
+    /**
+     * Nota académica que el tutor asigna al estudiante (0-20) + reseña del tutor.
+     */
+    @Transactional
+    public SesionTutoria calificarAcademico(UUID sesionId, BigDecimal notaAcademica, String resena) {
+        SesionTutoria sesion = sesionRepository.findById(sesionId)
+                .orElseThrow(() -> new RuntimeException("Sesión no encontrada"));
+
+        if (sesion.getEstado() != SesionTutoria.EstadoSesion.COMPLETADA) {
+            throw new RuntimeException("Solo se pueden calificar sesiones completadas");
+        }
+
+        sesion.setNotaAcademica(notaAcademica);
+        sesion.setResenaTutor(resena);
 
         return sesionRepository.save(sesion);
     }

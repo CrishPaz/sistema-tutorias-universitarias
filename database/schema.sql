@@ -19,6 +19,8 @@ CREATE TABLE usuarios (
     rol VARCHAR(50) NOT NULL CHECK (rol IN ('ESTUDIANTE', 'TUTOR', 'ADMIN', 'COORDINADOR')),
     estado VARCHAR(50) DEFAULT 'ACTIVO' CHECK (estado IN ('ACTIVO', 'INACTIVO', 'SUSPENDIDO')),
     email_verificado BOOLEAN DEFAULT FALSE,
+    foto_url TEXT,                 -- Compartido por estudiante y tutor
+    biografia TEXT,                -- Compartido por estudiante y tutor
     ultimo_login TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -41,8 +43,6 @@ CREATE TABLE perfiles_estudiante (
     semestre INTEGER NOT NULL CHECK (semestre >= 1 AND semestre <= 12),
     promedio_general DECIMAL(3,2) DEFAULT 0.00,
     creditos_aprobados INTEGER DEFAULT 0,
-    foto_url TEXT,
-    biografia TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -59,19 +59,38 @@ CREATE TABLE perfiles_tutor (
     tarifa_hora DECIMAL(10,2) DEFAULT 0.00,
     calificacion_promedio DECIMAL(3,2) DEFAULT 5.00,
     total_sesiones INTEGER DEFAULT 0,
-    disponibilidad JSONB, -- Horarios disponibles
-    foto_url TEXT,
-    biografia TEXT,
     verificado BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Tabla para certificaciones de tutores (ElementCollection)
-CREATE TABLE tutor_certificaciones (
+-- =====================================================
+-- TABLA: certificaciones (1:N con perfiles_tutor)
+-- =====================================================
+CREATE TABLE certificaciones (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     perfil_tutor_id UUID NOT NULL REFERENCES perfiles_tutor(id) ON DELETE CASCADE,
-    certificacion VARCHAR(255) NOT NULL
+    nombre VARCHAR(255) NOT NULL,
+    institucion VARCHAR(255),
+    anio INTEGER,
+    url_credencial TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX idx_certificaciones_tutor ON certificaciones(perfil_tutor_id);
+
+-- =====================================================
+-- TABLA: disponibilidades (1:N con perfiles_tutor)
+-- =====================================================
+CREATE TABLE disponibilidades (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    perfil_tutor_id UUID NOT NULL REFERENCES perfiles_tutor(id) ON DELETE CASCADE,
+    dia_semana VARCHAR(10) NOT NULL CHECK (dia_semana IN ('LUNES','MARTES','MIERCOLES','JUEVES','VIERNES','SABADO','DOMINGO')),
+    hora_inicio TIME NOT NULL,
+    hora_fin TIME NOT NULL
+);
+
+CREATE INDEX idx_disponibilidades_tutor ON disponibilidades(perfil_tutor_id);
 
 -- =====================================================
 -- TABLA: materias
@@ -83,7 +102,8 @@ CREATE TABLE materias (
     descripcion TEXT,
     creditos INTEGER DEFAULT 3,
     departamento VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- =====================================================
@@ -106,7 +126,6 @@ CREATE TABLE sesiones_tutoria (
     materia_id UUID NOT NULL REFERENCES materias(id),
     fecha_hora_inicio TIMESTAMP NOT NULL,
     fecha_hora_fin TIMESTAMP NOT NULL,
-    duracion_minutos INTEGER NOT NULL DEFAULT 60,
     estado VARCHAR(50) DEFAULT 'PENDIENTE' CHECK (estado IN ('PENDIENTE', 'CONFIRMADA', 'EN_PROGRESO', 'COMPLETADA', 'CANCELADA', 'NO_ASISTIO')),
     modalidad VARCHAR(50) DEFAULT 'VIRTUAL' CHECK (modalidad IN ('VIRTUAL', 'PRESENCIAL', 'HIBRIDA')),
     enlace_reunion TEXT, -- Zoom, Meet, etc.
@@ -114,8 +133,10 @@ CREATE TABLE sesiones_tutoria (
     precio DECIMAL(10,2) DEFAULT 0.00,
     notas_estudiante TEXT,
     notas_tutor TEXT,
-    calificacion_estudiante INTEGER CHECK (calificacion_estudiante >= 1 AND calificacion_estudiante <= 5),
-    comentario_calificacion TEXT,
+    calificacion_estudiante INTEGER CHECK (calificacion_estudiante >= 1 AND calificacion_estudiante <= 5), -- Nota del estudiante al servicio (1-5)
+    resena_estudiante TEXT,                                                                                -- Reseña del estudiante sobre la tutoría
+    nota_academica DECIMAL(4,2) CHECK (nota_academica >= 0 AND nota_academica <= 20),                      -- Nota académica que el tutor pone al estudiante (0-20)
+    resena_tutor TEXT,                                                                                     -- Reseña del tutor sobre el estudiante
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL
@@ -136,7 +157,6 @@ CREATE TABLE historial_academico (
     materia_id UUID NOT NULL REFERENCES materias(id),
     calificacion DECIMAL(4,2),
     periodo VARCHAR(20), -- e.g., "2025-1"
-    creditos INTEGER,
     estado VARCHAR(50) CHECK (estado IN ('APROBADA', 'REPROBADA', 'EN_CURSO', 'RETIRADA')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -176,9 +196,7 @@ CREATE TABLE notificaciones (
 -- =====================================================
 CREATE TABLE pagos (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    sesion_id UUID REFERENCES sesiones_tutoria(id),
-    estudiante_id UUID NOT NULL REFERENCES perfiles_estudiante(id),
-    tutor_id UUID NOT NULL REFERENCES perfiles_tutor(id),
+    sesion_id UUID REFERENCES sesiones_tutoria(id), -- Estudiante y tutor se derivan de la sesión
     monto DECIMAL(10,2) NOT NULL,
     moneda VARCHAR(10) DEFAULT 'USD',
     estado VARCHAR(50) DEFAULT 'PENDIENTE' CHECK (estado IN ('PENDIENTE', 'COMPLETADO', 'FALLIDO', 'REEMBOLSADO')),
@@ -219,6 +237,7 @@ CREATE TRIGGER update_usuarios_updated_at BEFORE UPDATE ON usuarios FOR EACH ROW
 CREATE TRIGGER update_perfiles_estudiante_updated_at BEFORE UPDATE ON perfiles_estudiante FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_perfiles_tutor_updated_at BEFORE UPDATE ON perfiles_tutor FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_sesiones_updated_at BEFORE UPDATE ON sesiones_tutoria FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_materias_updated_at BEFORE UPDATE ON materias FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Función para soft delete
 CREATE OR REPLACE FUNCTION soft_delete() RETURNS TRIGGER AS $$

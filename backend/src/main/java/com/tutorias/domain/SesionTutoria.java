@@ -1,5 +1,7 @@
 package com.tutorias.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -8,6 +10,7 @@ import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -22,6 +25,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @SQLDelete(sql = "UPDATE sesiones_tutoria SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?")
 @Where(clause = "deleted_at IS NULL")
 public class SesionTutoria {
@@ -48,10 +52,6 @@ public class SesionTutoria {
     @Column(name = "fecha_hora_fin", nullable = false)
     private LocalDateTime fechaHoraFin;
 
-    @Column(name = "duracion_minutos")
-    @Builder.Default
-    private Integer duracionMinutos = 60;
-
     @Enumerated(EnumType.STRING)
     @Builder.Default
     private EstadoSesion estado = EstadoSesion.PENDIENTE;
@@ -75,11 +75,19 @@ public class SesionTutoria {
     @Column(name = "notas_tutor", columnDefinition = "TEXT")
     private String notasTutor;
 
+    // Nota que el estudiante da al servicio de tutoría (1-5) + su reseña
     @Column(name = "calificacion_estudiante")
     private Integer calificacionEstudiante; // 1-5
 
-    @Column(name = "comentario_calificacion", columnDefinition = "TEXT")
-    private String comentarioCalificacion;
+    @Column(name = "resena_estudiante", columnDefinition = "TEXT")
+    private String resenaEstudiante;
+
+    // Nota académica que el tutor pone al estudiante (0-20) + su reseña
+    @Column(name = "nota_academica", precision = 4, scale = 2)
+    private BigDecimal notaAcademica;
+
+    @Column(name = "resena_tutor", columnDefinition = "TEXT")
+    private String resenaTutor;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -91,6 +99,18 @@ public class SesionTutoria {
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+
+    /**
+     * Duración derivada de la sesión en minutos (no se persiste; se calcula de inicio/fin).
+     */
+    @Transient
+    @JsonProperty("duracionMinutos")
+    public Long getDuracionMinutos() {
+        if (fechaHoraInicio == null || fechaHoraFin == null) {
+            return null;
+        }
+        return Duration.between(fechaHoraInicio, fechaHoraFin).toMinutes();
+    }
 
     public enum EstadoSesion {
         PENDIENTE, CONFIRMADA, EN_PROGRESO, COMPLETADA, CANCELADA, NO_ASISTIO
