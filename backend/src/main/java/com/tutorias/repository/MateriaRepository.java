@@ -8,4 +8,5 @@ import java.util.UUID;
 
 @Repository
 public interface MateriaRepository extends JpaRepository<Materia, UUID> {
+    boolean existsByCodigo(String codigo);
 }

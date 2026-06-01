@@ -6,7 +6,7 @@ import { useState } from 'react'
 import { useAuth } from '@/lib/auth'
 import {
   LayoutDashboard, CalendarPlus, BookOpen, MessageSquare, Bell,
-  User, Clock, LogOut, Menu, X, GraduationCap
+  User, Clock, Users, BarChart3, LogOut, Menu, X, GraduationCap
 } from 'lucide-react'
 
 interface Item {
@@ -34,6 +34,9 @@ const MENUS: Record<string, Item[]> = {
   ],
   ADMIN: [
     { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/admin/usuarios', label: 'Usuarios', icon: Users },
+    { href: '/admin/materias', label: 'Materias', icon: BookOpen },
+    { href: '/admin/reportes', label: 'Reportes', icon: BarChart3 },
     { href: '/notificaciones', label: 'Notificaciones', icon: Bell },
   ],
 }

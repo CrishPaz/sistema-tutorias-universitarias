@@ -53,4 +53,12 @@ public interface SesionTutoriaRepository extends JpaRepository<SesionTutoria, UU
                                    @Param("inicio") LocalDateTime inicio,
                                    @Param("fin") LocalDateTime fin,
                                    @Param("cancelada") SesionTutoria.EstadoSesion cancelada);
+
+    // --- Reportes (admin) ---
+
+    @Query("SELECT s.estado, count(s) FROM SesionTutoria s GROUP BY s.estado")
+    List<Object[]> contarPorEstado();
+
+    @Query("SELECT COALESCE(SUM(s.precio), 0) FROM SesionTutoria s WHERE s.estado = com.tutorias.domain.SesionTutoria.EstadoSesion.COMPLETADA")
+    java.math.BigDecimal ingresosCompletadas();
 }
