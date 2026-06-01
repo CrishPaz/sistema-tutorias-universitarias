@@ -6,11 +6,15 @@ import com.tutorias.repository.PerfilEstudianteRepository;
 import com.tutorias.repository.PerfilTutorRepository;
 import com.tutorias.repository.SesionTutoriaRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -43,8 +47,27 @@ public class SesionService {
         Materia materia = materiaRepository.findById(materiaId)
                 .orElseThrow(() -> new RuntimeException("Materia no encontrada"));
 
-        // Validar disponibilidad (simplificado - en producción usar calendario real)
         LocalDateTime fechaFin = fechaInicio.plusMinutes(duracionMinutos);
+
+        // 1) No reservar en el pasado
+        if (fechaInicio.isBefore(LocalDateTime.now())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "No puedes reservar una sesión en el pasado");
+        }
+
+        // 2) Debe caer dentro de la disponibilidad del tutor (si tiene horarios configurados)
+        validarDisponibilidad(tutor, fechaInicio, fechaFin);
+
+        // 3) Sin solapamiento con otras sesiones del tutor ni del estudiante
+        SesionTutoria.EstadoSesion cancelada = SesionTutoria.EstadoSesion.CANCELADA;
+        if (sesionRepository.contarSolapadasTutor(tutor.getId(), fechaInicio, fechaFin, cancelada) > 0) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "El tutor ya tiene una sesión reservada en ese horario");
+        }
+        if (sesionRepository.contarSolapadasEstudiante(estudiante.getId(), fechaInicio, fechaFin, cancelada) > 0) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Ya tienes otra sesión reservada en ese horario");
+        }
 
         SesionTutoria sesion = SesionTutoria.builder()
                 .estudiante(estudiante)
@@ -59,6 +82,42 @@ public class SesionService {
                 .build();
 
         return sesionRepository.save(sesion);
+    }
+
+    /**
+     * Verifica que [inicio, fin] caiga dentro de algún bloque de disponibilidad del tutor.
+     * Si el tutor no tiene disponibilidad configurada, no se restringe el horario.
+     */
+    private void validarDisponibilidad(PerfilTutor tutor, LocalDateTime inicio, LocalDateTime fin) {
+        List<Disponibilidad> bloques = tutor.getDisponibilidades();
+        if (bloques == null || bloques.isEmpty()) {
+            return; // sin horarios definidos -> no se valida (evita bloquear tutores no configurados)
+        }
+        Disponibilidad.DiaSemana dia = aDiaSemana(inicio.getDayOfWeek());
+        LocalTime horaInicio = inicio.toLocalTime();
+        LocalTime horaFin = fin.toLocalTime();
+
+        boolean dentro = bloques.stream().anyMatch(b ->
+                b.getDiaSemana() == dia
+                        && !horaInicio.isBefore(b.getHoraInicio())
+                        && !horaFin.isAfter(b.getHoraFin()));
+
+        if (!dentro) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "El tutor no está disponible en ese día/horario");
+        }
+    }
+
+    private Disponibilidad.DiaSemana aDiaSemana(DayOfWeek d) {
+        return switch (d) {
+            case MONDAY -> Disponibilidad.DiaSemana.LUNES;
+            case TUESDAY -> Disponibilidad.DiaSemana.MARTES;
+            case WEDNESDAY -> Disponibilidad.DiaSemana.MIERCOLES;
+            case THURSDAY -> Disponibilidad.DiaSemana.JUEVES;
+            case FRIDAY -> Disponibilidad.DiaSemana.VIERNES;
+            case SATURDAY -> Disponibilidad.DiaSemana.SABADO;
+            case SUNDAY -> Disponibilidad.DiaSemana.DOMINGO;
+        };
     }
 
     public List<SesionTutoria> obtenerSesionesEstudiante(UUID usuarioId) {

@@ -37,4 +37,20 @@ public interface SesionTutoriaRepository extends JpaRepository<SesionTutoria, UU
     @Query("SELECT AVG(s.calificacionEstudiante) FROM SesionTutoria s " +
            "WHERE s.tutor.id = :tutorId AND s.calificacionEstudiante IS NOT NULL")
     Double promedioCalificacionTutor(@Param("tutorId") UUID tutorId);
+
+    // --- Validación de solapamiento de horarios (dos intervalos chocan si inicioA < finB && finA > inicioB) ---
+
+    @Query("SELECT count(s) FROM SesionTutoria s WHERE s.tutor.id = :tutorId " +
+           "AND s.estado <> :cancelada AND s.fechaHoraInicio < :fin AND s.fechaHoraFin > :inicio")
+    long contarSolapadasTutor(@Param("tutorId") UUID tutorId,
+                              @Param("inicio") LocalDateTime inicio,
+                              @Param("fin") LocalDateTime fin,
+                              @Param("cancelada") SesionTutoria.EstadoSesion cancelada);
+
+    @Query("SELECT count(s) FROM SesionTutoria s WHERE s.estudiante.id = :estudianteId " +
+           "AND s.estado <> :cancelada AND s.fechaHoraInicio < :fin AND s.fechaHoraFin > :inicio")
+    long contarSolapadasEstudiante(@Param("estudianteId") UUID estudianteId,
+                                   @Param("inicio") LocalDateTime inicio,
+                                   @Param("fin") LocalDateTime fin,
+                                   @Param("cancelada") SesionTutoria.EstadoSesion cancelada);
 }
