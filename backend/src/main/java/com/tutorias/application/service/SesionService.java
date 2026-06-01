@@ -31,9 +31,12 @@ public class SesionService {
                                         LocalDateTime fechaInicio, Integer duracionMinutos,
                                         String modalidad, String notas) {
 
-        PerfilEstudiante estudiante = estudianteRepository.findById(estudianteId)
-                .orElseThrow(() -> new RuntimeException("Estudiante no encontrado"));
+        // El frontend envía el id de USUARIO del estudiante (de localStorage)
+        PerfilEstudiante estudiante = estudianteRepository.findByUsuarioId(estudianteId)
+                .orElseGet(() -> estudianteRepository.findById(estudianteId)
+                        .orElseThrow(() -> new RuntimeException("Estudiante no encontrado")));
 
+        // El selector envía el id de PERFIL del tutor (de /tutores)
         PerfilTutor tutor = tutorRepository.findById(tutorId)
                 .orElseThrow(() -> new RuntimeException("Tutor no encontrado"));
 
@@ -58,12 +61,12 @@ public class SesionService {
         return sesionRepository.save(sesion);
     }
 
-    public List<SesionTutoria> obtenerSesionesEstudiante(UUID estudianteId) {
-        return sesionRepository.findByEstudianteId(estudianteId);
+    public List<SesionTutoria> obtenerSesionesEstudiante(UUID usuarioId) {
+        return sesionRepository.findByEstudianteUsuarioId(usuarioId);
     }
 
-    public List<SesionTutoria> obtenerSesionesTutor(UUID tutorId) {
-        return sesionRepository.findByTutorId(tutorId);
+    public List<SesionTutoria> obtenerSesionesTutor(UUID usuarioId) {
+        return sesionRepository.findByTutorUsuarioId(usuarioId);
     }
 
     @Transactional
@@ -72,15 +75,31 @@ public class SesionService {
                 .orElseThrow(() -> new RuntimeException("Sesión no encontrada"));
 
         sesion.setEstado(nuevoEstado);
+        SesionTutoria guardada = sesionRepository.save(sesion);
 
-        if (nuevoEstado == SesionTutoria.EstadoSesion.COMPLETADA) {
-            // Incrementar contador del tutor
-            PerfilTutor tutor = sesion.getTutor();
-            tutor.setTotalSesiones(tutor.getTotalSesiones() + 1);
-            // Lógica de calificación promedio aquí...
-        }
+        // Recalcular métricas del tutor desde las sesiones (no incrementos manuales)
+        recalcularMetricasTutor(sesion.getTutor());
 
-        return sesionRepository.save(sesion);
+        return guardada;
+    }
+
+    /**
+     * Recalcula total_sesiones (sesiones COMPLETADAS) y calificacion_promedio
+     * (media de las calificaciones del estudiante) directamente desde la BD.
+     */
+    @Transactional
+    public void recalcularMetricasTutor(PerfilTutor tutor) {
+        UUID tutorId = tutor.getId();
+        long completadas = sesionRepository.countByTutorIdAndEstado(
+                tutorId, SesionTutoria.EstadoSesion.COMPLETADA);
+        Double promedio = sesionRepository.promedioCalificacionTutor(tutorId);
+
+        tutor.setTotalSesiones((int) completadas);
+        tutor.setCalificacionPromedio(
+                promedio != null
+                        ? BigDecimal.valueOf(promedio).setScale(2, java.math.RoundingMode.HALF_UP)
+                        : new BigDecimal("5.00"));
+        tutorRepository.save(tutor);
     }
 
     /**
@@ -97,8 +116,12 @@ public class SesionService {
 
         sesion.setCalificacionEstudiante(calificacion);
         sesion.setResenaEstudiante(resena);
+        SesionTutoria guardada = sesionRepository.save(sesion);
 
-        return sesionRepository.save(sesion);
+        // La calificación cambia el promedio del tutor
+        recalcularMetricasTutor(sesion.getTutor());
+
+        return guardada;
     }
 
     /**

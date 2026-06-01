@@ -10,6 +10,7 @@ export default function TutorDashboard() {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [sesiones, setSesiones] = useState<any[]>([])
+  const [perfil, setPerfil] = useState<any>(null)
 
   useEffect(() => {
     const nombre = localStorage.getItem('nombre')
@@ -27,8 +28,18 @@ export default function TutorDashboard() {
       api.get(`/sesiones/tutor/${userId}`)
         .then(res => setSesiones(res.data))
         .catch(console.error)
+      api.get(`/tutores/perfil/${userId}`)
+        .then(res => setPerfil(res.data))
+        .catch(console.error)
     }
   }, [router])
+
+  // Métricas reales derivadas de las sesiones / perfil
+  const completadas = sesiones.filter(s => s.estado === 'COMPLETADA')
+  const ingresos = completadas.reduce((acc, s) => acc + (Number(s.precio) || 0), 0)
+  const estudiantesUnicos = new Set(sesiones.map(s => s.estudiante?.id).filter(Boolean)).size
+  const calificacion = perfil?.calificacionPromedio ?? '—'
+  const totalSesiones = perfil?.totalSesiones ?? completadas.length
 
   return (
     <div className="min-h-screen bg-zinc-950">
@@ -60,8 +71,8 @@ export default function TutorDashboard() {
           <div className="glass p-8 rounded-3xl">
             <div className="flex justify-between items-start">
               <div>
-                <div className="text-4xl font-semibold">47</div>
-                <div className="text-sm text-zinc-400 mt-1">Sesiones este mes</div>
+                <div className="text-4xl font-semibold">{totalSesiones}</div>
+                <div className="text-sm text-zinc-400 mt-1">Sesiones completadas</div>
               </div>
               <Calendar className="w-9 h-9 text-emerald-400" />
             </div>
@@ -69,8 +80,8 @@ export default function TutorDashboard() {
           <div className="glass p-8 rounded-3xl">
             <div className="flex justify-between items-start">
               <div>
-                <div className="text-4xl font-semibold">S/ 1,890</div>
-                <div className="text-sm text-zinc-400 mt-1">Ingresos este mes</div>
+                <div className="text-4xl font-semibold">S/ {ingresos.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                <div className="text-sm text-zinc-400 mt-1">Ingresos (sesiones completadas)</div>
               </div>
               <DollarSign className="w-9 h-9 text-emerald-400" />
             </div>
@@ -78,7 +89,7 @@ export default function TutorDashboard() {
           <div className="glass p-8 rounded-3xl">
             <div className="flex justify-between items-start">
               <div>
-                <div className="text-4xl font-semibold">4.92</div>
+                <div className="text-4xl font-semibold">{calificacion}</div>
                 <div className="text-sm text-zinc-400 mt-1">Calificación promedio</div>
               </div>
               <Star className="w-9 h-9 text-yellow-400" />
@@ -87,7 +98,7 @@ export default function TutorDashboard() {
           <div className="glass p-8 rounded-3xl">
             <div className="flex justify-between items-start">
               <div>
-                <div className="text-4xl font-semibold">312</div>
+                <div className="text-4xl font-semibold">{estudiantesUnicos}</div>
                 <div className="text-sm text-zinc-400 mt-1">Estudiantes atendidos</div>
               </div>
               <Users className="w-9 h-9 text-emerald-400" />
