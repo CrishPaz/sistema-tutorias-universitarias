@@ -53,10 +53,11 @@ public class SecurityConfig {
                     "/v3/api-docs/**",
                     "/actuator/health"
                 ).permitAll()
-                // Solo ADMIN
-                .requestMatchers("/admin/**").hasRole("ADMIN")
-                // Estudiante y Tutor
-                .requestMatchers("/estudiante/**", "/tutor/**", "/tutores/**", "/sesiones/**").hasAnyRole("ESTUDIANTE", "TUTOR", "ADMIN")
+                // Solo ADMIN / COORDINADOR
+                .requestMatchers("/admin/**").hasAnyRole("ADMIN", "COORDINADOR")
+                // Lectura de tutores y sesiones: todos los roles autenticados
+                .requestMatchers("/estudiante/**", "/tutor/**", "/tutores/**", "/sesiones/**")
+                    .hasAnyRole("ESTUDIANTE", "TUTOR", "ADMIN", "COORDINADOR")
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

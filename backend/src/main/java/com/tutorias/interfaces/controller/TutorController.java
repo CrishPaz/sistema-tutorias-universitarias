@@ -8,8 +8,13 @@ import com.tutorias.repository.PerfilTutorRepository;
 import com.tutorias.repository.UsuarioRepository;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -25,6 +30,25 @@ public class TutorController {
 
     private final PerfilTutorRepository perfilTutorRepository;
     private final UsuarioRepository usuarioRepository;
+
+    /**
+     * Verifica que el usuario autenticado sea dueño del recurso (o ADMIN).
+     * Evita que un tutor edite el perfil de otro, o que cualquiera modifique perfiles ajenos.
+     */
+    private void verificarPropietario(UUID usuarioIdPath) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean esAdmin = auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        if (esAdmin) return;
+
+        UUID propio = usuarioRepository.findByEmail(auth.getName())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuario no encontrado"))
+                .getId();
+        if (!propio.equals(usuarioIdPath)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "No puedes modificar el perfil de otro usuario");
+        }
+    }
 
     @GetMapping
     public List<PerfilTutor> obtenerTodos() {
@@ -49,9 +73,11 @@ public class TutorController {
     }
 
     @PutMapping("/perfil/{usuarioId}")
+    @PreAuthorize("hasAnyRole('TUTOR','ADMIN')")
     @Transactional
     public PerfilTutor actualizarPerfil(@PathVariable String usuarioId, @RequestBody Map<String, Object> datos) {
         UUID uuid = UUID.fromString(usuarioId);
+        verificarPropietario(uuid);
         PerfilTutor perfil = perfilTutorRepository.findByUsuarioId(uuid)
                 .orElseGet(() -> {
                     PerfilTutor nuevo = new PerfilTutor();
@@ -79,9 +105,11 @@ public class TutorController {
     }
 
     @PutMapping("/disponibilidad/{usuarioId}")
+    @PreAuthorize("hasAnyRole('TUTOR','ADMIN')")
     @Transactional
     @SuppressWarnings("unchecked")
     public PerfilTutor actualizarDisponibilidad(@PathVariable String usuarioId, @RequestBody Map<String, Object> body) {
+        verificarPropietario(UUID.fromString(usuarioId));
         PerfilTutor perfil = perfilTutorRepository.findByUsuarioId(UUID.fromString(usuarioId))
                 .orElseThrow(() -> new RuntimeException("Perfil de tutor no encontrado"));
 
@@ -103,9 +131,11 @@ public class TutorController {
     }
 
     @PutMapping("/certificaciones/{usuarioId}")
+    @PreAuthorize("hasAnyRole('TUTOR','ADMIN')")
     @Transactional
     @SuppressWarnings("unchecked")
     public PerfilTutor actualizarCertificaciones(@PathVariable String usuarioId, @RequestBody Map<String, Object> body) {
+        verificarPropietario(UUID.fromString(usuarioId));
         PerfilTutor perfil = perfilTutorRepository.findByUsuarioId(UUID.fromString(usuarioId))
                 .orElseThrow(() -> new RuntimeException("Perfil de tutor no encontrado"));
 

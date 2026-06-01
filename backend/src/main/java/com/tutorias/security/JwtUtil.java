@@ -3,6 +3,7 @@ package com.tutorias.security;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
@@ -28,6 +29,20 @@ public class JwtUtil {
 
     @Value("${jwt.refresh-expiration}")
     private Long refreshTokenExpiration;
+
+    /**
+     * Falla rápido al arrancar si el secreto no está configurado o es débil.
+     * En el perfil docker, jwt.secret = ${JWT_SECRET} (sin valor por defecto),
+     * por lo que la app no levanta si falta la variable de entorno.
+     */
+    @PostConstruct
+    void validarSecreto() {
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException(
+                "jwt.secret no configurado: define la variable de entorno JWT_SECRET.");
+        }
+        getSigningKey(); // valida longitud/clave (HS256 exige >= 256 bits) al arrancar
+    }
 
     private Key getSigningKey() {
         byte[] keyBytes = Decoders.BASE64URL.decode(secret);
