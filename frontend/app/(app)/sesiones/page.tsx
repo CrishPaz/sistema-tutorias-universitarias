@@ -1,39 +1,32 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import axios from 'axios'
+import api from '@/lib/api'
 import Link from 'next/link'
-import { ArrowLeft, Calendar } from 'lucide-react'
+import { Calendar } from 'lucide-react'
 
 export default function MisSesiones() {
   const [sesiones, setSesiones] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const token = localStorage.getItem('token')
     const userId = localStorage.getItem('userId')
     const rol = localStorage.getItem('rol')
 
-    if (!token || !userId) return
+    if (!userId) return
 
-    const endpoint = rol === 'TUTOR' 
-      ? `http://localhost:8080/api/sesiones/tutor/${userId}`
-      : `http://localhost:8080/api/sesiones/estudiante/${userId}`
+    const endpoint = rol === 'TUTOR'
+      ? `/sesiones/tutor/${userId}`
+      : `/sesiones/estudiante/${userId}`
 
-    axios.get(endpoint, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    .then(res => setSesiones(res.data))
-    .finally(() => setLoading(false))
+    api.get(endpoint)
+      .then(res => setSesiones(res.data))
+      .finally(() => setLoading(false))
   }, [])
 
   return (
     <div className="min-h-screen bg-zinc-950 p-8">
       <div className="max-w-5xl mx-auto">
-        <Link href="/dashboard" className="inline-flex items-center gap-2 text-purple-400 mb-8">
-          <ArrowLeft className="w-4 h-4" /> Volver al dashboard
-        </Link>
-
         <div className="flex items-center justify-between mb-10">
           <h1 className="text-5xl font-semibold tracking-tight">Mis Sesiones</h1>
           <Link href="/sesiones/reservar" className="px-8 py-3 bg-white text-black rounded-2xl font-medium flex items-center gap-2">

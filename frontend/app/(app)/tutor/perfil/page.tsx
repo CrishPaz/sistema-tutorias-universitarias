@@ -1,10 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import axios from 'axios'
-import { ArrowLeft, Save, User, Award, Plus, Trash2 } from 'lucide-react'
-import Link from 'next/link'
+import api from '@/lib/api'
+import { Save, User, Award, Plus, Trash2 } from 'lucide-react'
 
 interface Certificacion {
   nombre: string
@@ -13,30 +11,21 @@ interface Certificacion {
 }
 
 export default function PerfilTutor() {
-  const router = useRouter()
   const [perfil, setPerfil] = useState<any>(null)
   const [certificaciones, setCertificaciones] = useState<Certificacion[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [mensaje, setMensaje] = useState('')
 
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
   const userId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null
 
   useEffect(() => {
-    if (!token || !userId) {
-      router.push('/auth/login')
-      return
-    }
-
     cargarPerfil()
-  }, [router, token, userId])
+  }, [userId])
 
   const cargarPerfil = async () => {
     try {
-      const res = await axios.get(`http://localhost:8080/api/tutores/perfil/${userId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
+      const res = await api.get(`/tutores/perfil/${userId}`)
       // biografia ahora vive en usuario; la elevamos a nivel raíz para editar
       setPerfil({ ...res.data, biografia: res.data.usuario?.biografia || '' })
       setCertificaciones(res.data.certificaciones || [])
@@ -50,13 +39,12 @@ export default function PerfilTutor() {
   const guardarPerfil = async () => {
     setSaving(true)
     try {
-      const headers = { Authorization: `Bearer ${token}` }
       // 1) Datos del perfil (biografia se enruta a usuario en el backend)
-      await axios.put(`http://localhost:8080/api/tutores/perfil/${userId}`, perfil, { headers })
+      await api.put(`/tutores/perfil/${userId}`, perfil)
       // 2) Certificaciones (lista 1:N, se reemplaza completa)
-      await axios.put(`http://localhost:8080/api/tutores/certificaciones/${userId}`, {
+      await api.put(`/tutores/certificaciones/${userId}`, {
         certificaciones: certificaciones.filter(c => c.nombre?.trim())
-      }, { headers })
+      })
       setMensaje('Perfil actualizado correctamente')
       setTimeout(() => setMensaje(''), 3000)
     } catch (error) {
@@ -83,9 +71,6 @@ export default function PerfilTutor() {
     <div className="min-h-screen bg-zinc-950 p-8">
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center gap-4 mb-10">
-          <Link href="/tutor/dashboard" className="text-purple-400 hover:text-purple-300">
-            <ArrowLeft className="w-6 h-6" />
-          </Link>
           <h1 className="text-4xl font-semibold tracking-tight flex items-center gap-3">
             <User className="w-9 h-9" /> Mi Perfil de Tutor
           </h1>

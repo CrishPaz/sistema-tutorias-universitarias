@@ -1,10 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import axios from 'axios'
-import { ArrowLeft, Bell, Check } from 'lucide-react'
-import Link from 'next/link'
+import api from '@/lib/api'
+import { Bell, Check } from 'lucide-react'
 
 interface Notificacion {
   id: string
@@ -16,27 +14,18 @@ interface Notificacion {
 }
 
 export default function NotificacionesPage() {
-  const router = useRouter()
   const [notificaciones, setNotificaciones] = useState<Notificacion[]>([])
   const [loading, setLoading] = useState(true)
 
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
   const userId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null
 
   useEffect(() => {
-    if (!token || !userId) {
-      router.push('/auth/login')
-      return
-    }
-
     cargarNotificaciones()
-  }, [router, token, userId])
+  }, [userId])
 
   const cargarNotificaciones = async () => {
     try {
-      const res = await axios.get(`http://localhost:8080/api/notificaciones/${userId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
+      const res = await api.get(`/notificaciones/${userId}`)
       setNotificaciones(res.data)
     } catch (error) {
       console.error('Error cargando notificaciones')
@@ -47,9 +36,7 @@ export default function NotificacionesPage() {
 
   const marcarComoLeida = async (id: string) => {
     try {
-      await axios.patch(`http://localhost:8080/api/notificaciones/${id}/leer`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
+      await api.patch(`/notificaciones/${id}/leer`, {})
       cargarNotificaciones()
     } catch (error) {
       console.error('Error marcando notificación')
@@ -82,9 +69,6 @@ export default function NotificacionesPage() {
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center justify-between mb-10">
           <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="text-purple-400 hover:text-purple-300">
-              <ArrowLeft className="w-6 h-6" />
-            </Link>
             <div>
               <h1 className="text-4xl font-semibold tracking-tight flex items-center gap-3">
                 <Bell className="w-9 h-9" /> Notificaciones

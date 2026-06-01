@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import axios from 'axios'
-import { Calendar, Clock, Star, Users, LogOut } from 'lucide-react'
+import api from '@/lib/api'
+import { Calendar, Clock, Star, Users } from 'lucide-react'
 import Link from 'next/link'
 
 interface Sesion {
@@ -22,33 +22,25 @@ export default function StudentDashboard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const token = localStorage.getItem('token')
     const nombre = localStorage.getItem('nombre')
     const rol = localStorage.getItem('rol')
 
-    if (!token || rol !== 'ESTUDIANTE') {
-      router.push('/auth/login')
+    // El layout (app) ya valida el token; aquí solo redirigimos si el rol no corresponde.
+    if (rol && rol !== 'ESTUDIANTE') {
+      router.replace(rol === 'TUTOR' ? '/tutor/dashboard' : '/admin/dashboard')
       return
     }
 
     setUser({ nombre, rol })
 
-    // Cargar sesiones del estudiante
     const userId = localStorage.getItem('userId')
     if (userId) {
-      axios.get(`http://localhost:8080/api/sesiones/estudiante/${userId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      .then(res => setSesiones(res.data))
-      .catch(console.error)
-      .finally(() => setLoading(false))
+      api.get(`/sesiones/estudiante/${userId}`)
+        .then(res => setSesiones(res.data))
+        .catch(console.error)
+        .finally(() => setLoading(false))
     }
   }, [router])
-
-  const handleLogout = () => {
-    localStorage.clear()
-    router.push('/auth/login')
-  }
 
   const getStatusColor = (estado: string) => {
     switch (estado) {
@@ -62,27 +54,6 @@ export default function StudentDashboard() {
 
   return (
     <div className="min-h-screen bg-zinc-950">
-      {/* Navbar */}
-      <nav className="glass border-b border-white/10 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-8 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-purple-600 rounded-2xl flex items-center justify-center">
-              <span className="font-bold">TU</span>
-            </div>
-            <span className="font-semibold text-2xl">Tutorias</span>
-          </div>
-
-          <div className="flex items-center gap-6">
-            <div className="text-right">
-              <div className="font-medium">{user?.nombre}</div>
-              <div className="text-xs text-emerald-400">Estudiante</div>
-            </div>
-            <button onClick={handleLogout} className="p-3 hover:bg-white/10 rounded-2xl transition-colors">
-              <LogOut className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      </nav>
 
       <div className="max-w-7xl mx-auto px-8 py-12">
         <div className="flex justify-between items-end mb-10">

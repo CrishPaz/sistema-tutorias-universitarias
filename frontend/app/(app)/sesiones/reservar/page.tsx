@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import axios from 'axios'
-import { Calendar, Clock, Users, ArrowLeft } from 'lucide-react'
-import Link from 'next/link'
+import api from '@/lib/api'
+import { Calendar } from 'lucide-react'
 
 interface Tutor {
   id: string
@@ -36,29 +35,15 @@ export default function ReservarSesion() {
 
   // Cargar tutores y materias
   useEffect(() => {
-    const token = localStorage.getItem('token')
-    if (!token) {
-      router.push('/auth/login')
-      return
-    }
-
-    // Cargar materias
-    axios.get('http://localhost:8080/api/materias', {
-      headers: { Authorization: `Bearer ${token}` }
-    }).then(res => setMaterias(res.data))
-
-    // Cargar tutores (simplificado - en producción filtrar por materia)
-    axios.get('http://localhost:8080/api/tutores', {
-      headers: { Authorization: `Bearer ${token}` }
-    }).then(res => setTutores(res.data))
-  }, [router])
+    api.get('/materias').then(res => setMaterias(res.data))
+    api.get('/tutores').then(res => setTutores(res.data))
+  }, [])
 
   const handleReservar = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
 
-    const token = localStorage.getItem('token')
     const estudianteId = localStorage.getItem('userId')
 
     if (!estudianteId) {
@@ -68,18 +53,19 @@ export default function ReservarSesion() {
     }
 
     try {
-      const fechaHora = `${fecha}T${hora}:00`
+      const fechaInicio = `${fecha}T${hora}:00`
 
-      await axios.post('http://localhost:8080/api/sesiones/reservar', {
-        estudianteId,
-        tutorId: selectedTutor,
-        materiaId: selectedMateria,
-        fechaInicio: fechaHora,
-        duracion,
-        modalidad: 'VIRTUAL',
-        notas: 'Reserva desde la plataforma web'
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
+      // El endpoint usa query params (@RequestParam), no body.
+      await api.post('/sesiones/reservar', null, {
+        params: {
+          estudianteId,
+          tutorId: selectedTutor,
+          materiaId: selectedMateria,
+          fechaInicio,
+          duracion,
+          modalidad: 'VIRTUAL',
+          notas: 'Reserva desde la plataforma web'
+        }
       })
 
       alert('¡Sesión reservada exitosamente!')
@@ -94,10 +80,6 @@ export default function ReservarSesion() {
   return (
     <div className="min-h-screen bg-zinc-950 p-8">
       <div className="max-w-4xl mx-auto">
-        <Link href="/dashboard" className="inline-flex items-center gap-2 text-purple-400 mb-8">
-          <ArrowLeft className="w-4 h-4" /> Volver al Dashboard
-        </Link>
-
         <div className="glass p-10 rounded-3xl border border-white/10">
           <div className="text-center mb-10">
             <div className="mx-auto w-16 h-16 bg-purple-600 rounded-2xl flex items-center justify-center mb-4">

@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import axios from 'axios'
-import { Users, BookOpen, Star, ShieldCheck, LogOut, GraduationCap } from 'lucide-react'
+import api from '@/lib/api'
+import { Users, BookOpen, Star, ShieldCheck, GraduationCap } from 'lucide-react'
 
 interface Tutor {
   id: string
@@ -30,28 +30,21 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const token = localStorage.getItem('token')
     const nombre = localStorage.getItem('nombre')
     const rol = localStorage.getItem('rol')
 
-    if (!token || (rol !== 'ADMIN' && rol !== 'COORDINADOR')) {
-      router.push('/auth/login')
+    if (rol && rol !== 'ADMIN' && rol !== 'COORDINADOR') {
+      router.replace(rol === 'TUTOR' ? '/tutor/dashboard' : '/dashboard')
       return
     }
 
     setUser({ nombre, rol })
 
-    const headers = { Authorization: `Bearer ${token}` }
     Promise.all([
-      axios.get('http://localhost:8080/api/tutores', { headers }).then(r => setTutores(r.data)).catch(console.error),
-      axios.get('http://localhost:8080/api/materias', { headers }).then(r => setMaterias(r.data)).catch(console.error),
+      api.get('/tutores').then(r => setTutores(r.data)).catch(console.error),
+      api.get('/materias').then(r => setMaterias(r.data)).catch(console.error),
     ]).finally(() => setLoading(false))
   }, [router])
-
-  const handleLogout = () => {
-    localStorage.clear()
-    router.push('/auth/login')
-  }
 
   const tutoresVerificados = tutores.filter(t => t.verificado).length
   const calificacionMedia = tutores.length
@@ -60,29 +53,6 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-zinc-950">
-      <nav className="glass border-b border-white/10 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-8 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-purple-600 rounded-2xl flex items-center justify-center">
-              <span className="font-bold">TU</span>
-            </div>
-            <span className="font-semibold text-2xl">
-              Tutorias <span className="text-purple-400 text-sm">{user?.rol === 'COORDINADOR' ? 'Coordinador' : 'Admin'}</span>
-            </span>
-          </div>
-
-          <div className="flex items-center gap-6">
-            <div className="text-right">
-              <div className="font-medium">{user?.nombre}</div>
-              <div className="text-xs text-purple-400">{user?.rol === 'COORDINADOR' ? 'Coordinador Académico' : 'Administrador'}</div>
-            </div>
-            <button onClick={handleLogout} className="p-3 hover:bg-white/10 rounded-2xl transition-colors">
-              <LogOut className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      </nav>
-
       <div className="max-w-7xl mx-auto px-8 py-12">
         <div className="mb-10">
           <h1 className="text-5xl font-semibold tracking-tight">Panel de Administración</h1>

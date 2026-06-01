@@ -1,10 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import axios from 'axios'
-import { ArrowLeft, Send, MessageCircle } from 'lucide-react'
-import Link from 'next/link'
+import api from '@/lib/api'
+import { Send, MessageCircle } from 'lucide-react'
 
 interface Mensaje {
   id: string
@@ -21,7 +19,6 @@ interface Sesion {
 }
 
 export default function ChatPage() {
-  const router = useRouter()
   const [sesiones, setSesiones] = useState<Sesion[]>([])
   const [selectedSesion, setSelectedSesion] = useState('')
   const [mensajes, setMensajes] = useState<Mensaje[]>([])
@@ -29,58 +26,44 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(false)
 
   const userId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
 
   // Cargar sesiones activas
   useEffect(() => {
-    if (!token) {
-      router.push('/auth/login')
-      return
-    }
+    const rol = typeof window !== 'undefined' ? localStorage.getItem('rol') : null
+    const endpoint = rol === 'TUTOR'
+      ? `/sesiones/tutor/${userId}`
+      : `/sesiones/estudiante/${userId}`
 
-    const rol = localStorage.getItem('rol')
-    const endpoint = rol === 'TUTOR' 
-      ? `http://localhost:8080/api/sesiones/tutor/${userId}`
-      : `http://localhost:8080/api/sesiones/estudiante/${userId}`
-
-    axios.get(endpoint, {
-      headers: { Authorization: `Bearer ${token}` }
-    }).then(res => {
+    api.get(endpoint).then(res => {
       setSesiones(res.data.filter((s: any) => s.estado === 'CONFIRMADA' || s.estado === 'EN_PROGRESO'))
     })
-  }, [router, userId, token])
+  }, [userId])
 
   // Cargar mensajes cuando se selecciona una sesión
   useEffect(() => {
-    if (!selectedSesion || !token) return
+    if (!selectedSesion) return
 
     const interval = setInterval(() => {
-      axios.get(`http://localhost:8080/api/mensajes/${selectedSesion}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      }).then(res => setMensajes(res.data))
+      api.get(`/mensajes/${selectedSesion}`).then(res => setMensajes(res.data))
     }, 3000) // Actualizar cada 3 segundos
 
     return () => clearInterval(interval)
-  }, [selectedSesion, token])
+  }, [selectedSesion])
 
   const enviarMensaje = async () => {
     if (!nuevoMensaje.trim() || !selectedSesion || !userId) return
 
     setLoading(true)
     try {
-      await axios.post('http://localhost:8080/api/mensajes', {
+      await api.post('/mensajes', {
         sesion_id: selectedSesion,
         remitente_id: userId,
         contenido: nuevoMensaje
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
       })
 
       setNuevoMensaje('')
       // Recargar mensajes
-      const res = await axios.get(`http://localhost:8080/api/mensajes/${selectedSesion}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
+      const res = await api.get(`/mensajes/${selectedSesion}`)
       setMensajes(res.data)
     } catch (error) {
       alert('Error al enviar mensaje')
@@ -94,9 +77,6 @@ export default function ChatPage() {
       <div className="glass border-b border-white/10 p-6">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="text-purple-400 hover:text-purple-300">
-              <ArrowLeft className="w-6 h-6" />
-            </Link>
             <div>
               <h1 className="text-2xl font-semibold">Chat de Sesiones</h1>
               <p className="text-sm text-zinc-400">Comunícate con tu tutor o estudiante</p>

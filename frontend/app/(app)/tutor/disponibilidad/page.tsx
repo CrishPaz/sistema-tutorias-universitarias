@@ -1,13 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import axios from 'axios'
-import { ArrowLeft, Save, Clock } from 'lucide-react'
-import Link from 'next/link'
+import api from '@/lib/api'
+import { Save, Clock } from 'lucide-react'
 
 export default function DisponibilidadTutor() {
-  const router = useRouter()
   const [disponibilidad, setDisponibilidad] = useState<any>({
     lunes: { inicio: '08:00', fin: '18:00' },
     martes: { inicio: '08:00', fin: '18:00' },
@@ -20,22 +17,15 @@ export default function DisponibilidadTutor() {
   const [saving, setSaving] = useState(false)
   const [mensaje, setMensaje] = useState('')
 
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
   const userId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null
 
   useEffect(() => {
-    if (!token || !userId) {
-      router.push('/auth/login')
-      return
-    }
     cargarDisponibilidad()
-  }, [router, token, userId])
+  }, [userId])
 
   const cargarDisponibilidad = async () => {
     try {
-      const res = await axios.get(`http://localhost:8080/api/tutores/perfil/${userId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
+      const res = await api.get(`/tutores/perfil/${userId}`)
       // El backend devuelve una lista [{diaSemana, horaInicio, horaFin}]; la convertimos al objeto por día
       const lista = res.data.disponibilidades || []
       if (lista.length > 0) {
@@ -65,11 +55,7 @@ export default function DisponibilidadTutor() {
           horaFin: h.fin
         }))
 
-      await axios.put(`http://localhost:8080/api/tutores/disponibilidad/${userId}`, {
-        disponibilidades
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
+      await api.put(`/tutores/disponibilidad/${userId}`, { disponibilidades })
       setMensaje('Disponibilidad guardada correctamente')
       setTimeout(() => setMensaje(''), 3000)
     } catch (error) {
@@ -93,9 +79,6 @@ export default function DisponibilidadTutor() {
     <div className="min-h-screen bg-zinc-950 p-8">
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center gap-4 mb-10">
-          <Link href="/tutor/dashboard" className="text-purple-400 hover:text-purple-300">
-            <ArrowLeft className="w-6 h-6" />
-          </Link>
           <h1 className="text-4xl font-semibold tracking-tight flex items-center gap-3">
             <Clock className="w-9 h-9" /> Mi Disponibilidad
           </h1>
